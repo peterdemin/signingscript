@@ -1029,7 +1029,7 @@ def test_signreq_task_keyid():
     s = SigningServer(
         "https://autograph-hsm.dev.mozaws.net", "alice", "bob", [fmt], "autograph"
     )
-    req = sign.make_signing_req(input_bytes, s, fmt, "newkeyid")
+    req = sign.make_signing_req(sign.b64encode(input_bytes), s, fmt, "newkeyid")
 
     assert req[0]["keyid"] == "newkeyid"
     assert req[0]["input"] == "aGVsbG8gd29ybGQ="
@@ -1042,7 +1042,7 @@ def test_signreq_task_omnija():
         "https://autograph-hsm.dev.mozaws.net", "alice", "bob", [fmt], "autograph"
     )
     req = sign.make_signing_req(
-        input_bytes, s, fmt, "newkeyid", extension_id="omni.ja@mozilla.org"
+        sign.b64encode(input_bytes), s, fmt, "newkeyid", extension_id="omni.ja@mozilla.org"
     )
 
     assert req[0]["keyid"] == "newkeyid"
@@ -1061,7 +1061,7 @@ def test_signreq_task_langpack():
         "https://autograph-hsm.dev.mozaws.net", "alice", "bob", [fmt], "autograph"
     )
     req = sign.make_signing_req(
-        input_bytes,
+        sign.b64encode(input_bytes),
         s,
         fmt,
         "newkeyid",

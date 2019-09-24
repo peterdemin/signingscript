@@ -948,10 +948,14 @@ async def call_autograph(url, user, password, request_json):
         return r.json()
 
 
-def make_signing_req(input_bytes, server, fmt, keyid=None, extension_id=None):
+def b64encode(input_bytes):
+    """Return a base64 encoded string."""
+    return base64.b64encode(input_bytes).decode("ascii")
+
+
+def make_signing_req(input_bytes_b64, server, fmt, keyid=None, extension_id=None):
     """Make a signing request object to pass to autograph."""
-    base64_input = base64.b64encode(input_bytes).decode("ascii")
-    sign_req = {"input": base64_input}
+    sign_req = {"input": input_bytes_b64}
 
     if keyid:
         sign_req["keyid"] = keyid
@@ -977,13 +981,13 @@ def make_signing_req(input_bytes, server, fmt, keyid=None, extension_id=None):
 
 
 async def sign_with_autograph(
-    server, input_bytes, fmt, autograph_method, keyid=None, extension_id=None
+    server, input_bytes_b64, fmt, autograph_method, keyid=None, extension_id=None
 ):
     """Signs data with autograph and returns the result.
 
     Args:
         server (SigningServer): the server to connect to sign
-        input_bytes (bytes): the source data to sign
+        input_bytes_b64 (bytes): the source data to sign, base64 encoded
         fmt (str): the format to sign with
         autograph_method (str): which autograph method to use to sign. must be
                                 one of 'file', 'hash', or 'data'
@@ -1001,7 +1005,7 @@ async def sign_with_autograph(
     if autograph_method not in {"file", "hash", "data"}:
         raise SigningScriptError(f"Unsupported autograph method: {autograph_method}")
 
-    sign_req = make_signing_req(input_bytes, server, fmt, keyid, extension_id)
+    sign_req = make_signing_req(input_bytes_b64, server, fmt, keyid, extension_id)
 
     log.debug("signing data with format %s with %s", fmt, autograph_method)
 
@@ -1047,10 +1051,10 @@ async def sign_file_with_autograph(context, from_, fmt, to=None, extension_id=No
     )
     s = servers[0]
     to = to or from_
-    input_bytes = open(from_, "rb").read()
+    input_bytes_b64 = b64encode(open(from_, "rb").read())
     signed_bytes = base64.b64decode(
         await sign_with_autograph(
-            s, input_bytes, fmt, "file", extension_id=extension_id
+            s, input_bytes_b64, fmt, "file", extension_id=extension_id
         )
     )
     with open(to, "wb") as fout:
@@ -1082,8 +1086,8 @@ async def sign_gpg_with_autograph(context, from_, fmt):
     )
     s = servers[0]
     to = f"{from_}.asc"
-    input_bytes = open(from_, "rb").read()
-    signature = await sign_with_autograph(s, input_bytes, fmt, "data")
+    input_bytes_b64 = b64encode(open(from_, "rb").read())
+    signature = await sign_with_autograph(s, input_bytes_b64, fmt, "data")
     with open(to, "w") as fout:
         fout.write(signature)
     return [from_, to]
@@ -1114,7 +1118,7 @@ async def sign_hash_with_autograph(context, hash_, fmt, keyid=None):
     )
     s = servers[0]
     signature = base64.b64decode(
-        await sign_with_autograph(s, hash_, fmt, "hash", keyid)
+        await sign_with_autograph(s, b64encode(hash_), fmt, "hash", keyid)
     )
     return signature
 

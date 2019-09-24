@@ -98,6 +98,9 @@ if [ "$ENV" == "prod" ]; then
   export AUTHENTICODE_TIMESTAMP_STYLE=old
   export AUTHENTICODE_CERT_PATH=/app/src/signingscript/data/authenticode_prod.crt
 fi
+if [ "$ENV" == "dev" ]; then
+  export AUTHENTICODE_TIMESTAMP_STYLE=old
+fi
 
 #
 # ensure configuration folder exists we can write to it
